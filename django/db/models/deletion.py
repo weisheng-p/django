@@ -191,6 +191,10 @@ class Collector(object):
         if self.can_fast_delete(objs):
             self.fast_deletes.append(objs)
             return
+
+        if not connections[self.using].features.supports_deleting_related_objects:
+            collect_related = False
+
         new_objs = self.add(objs, source, nullable,
                             reverse_dependency=reverse_dependency)
         if not new_objs:

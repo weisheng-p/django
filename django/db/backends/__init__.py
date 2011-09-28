@@ -350,6 +350,7 @@ class BaseDatabaseFeatures(object):
     has_select_for_update_nowait = False
 
     supports_select_related = True
+    supports_deleting_related_objects = True
 
     # Does the default test database allow multiple connections?
     # Usually an indication that the test database is in-memory
