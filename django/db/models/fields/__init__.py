@@ -541,27 +541,24 @@ class AutoField(Field):
         return db_type
 
     def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            msg = self.error_messages['invalid'] % value
+        if not (value is None or isinstance(value, six.string_types + six.integer_types)):
+            # ID must be string or int
+            msg = self.error_messages['invalid'] % str(value)
             raise exceptions.ValidationError(msg)
+        return value
 
     def validate(self, value, model_instance):
         pass
 
     def get_db_prep_value(self, value, connection, prepared=False):
+        # Casts AutoField into the format expected by the backend
         if not prepared:
             value = self.get_prep_value(value)
             value = connection.ops.validate_autopk_value(value)
         return value
 
     def get_prep_value(self, value):
-        if value is None:
-            return None
-        return int(value)
+        return value
 
     def contribute_to_class(self, cls, name):
         assert not cls._meta.has_auto_field, \
