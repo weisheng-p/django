@@ -1,11 +1,9 @@
-<<<<<<< HEAD
 from operator import attrgetter
 
 from django.db import connection, router, connections
 from django.db.backends import util
 from django.db.models import signals, get_model
-from django.db.models.fields import (AutoField, Field, IntegerField,
-    PositiveIntegerField, PositiveSmallIntegerField, FieldDoesNotExist)
+from django.db.models.fields import Field, FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.db.models.query import QuerySet
 from django.db.models.query_utils import QueryWrapper
@@ -953,9 +951,8 @@ class ForeignKey(RelatedField, Field):
     description = _("Foreign Key (type determined by related field)")
 
     def __init__(self, to, to_field=None, rel_class=ManyToOneRel, **kwargs):
-        try:
-            to_name = to._meta.object_name.lower()
-        except AttributeError:  # to._meta doesn't exist, so it must be RECURSIVE_RELATIONSHIP_CONSTANT
+        if not hasattr(to, '_meta'):
+            # to._meta doesn't exist, so it must be RECURSIVE_RELATIONSHIP_CONSTANT
             assert isinstance(to, six.string_types), "%s(%r) is invalid. First parameter to ForeignKey must be either a model, a model name, or the string %r" % (self.__class__.__name__, to, RECURSIVE_RELATIONSHIP_CONSTANT)
         else:
             assert not to._meta.abstract, "%s cannot define a relation with abstract class %s" % (self.__class__.__name__, to._meta.object_name)
@@ -963,6 +960,7 @@ class ForeignKey(RelatedField, Field):
             # the to_field during FK construction. It won't be guaranteed to
             # be correct until contribute_to_class is called. Refs #12190.
             to_field = to_field or (to._meta.pk and to._meta.pk.name)
+
         kwargs['verbose_name'] = kwargs.get('verbose_name', None)
 
         if 'db_index' not in kwargs:

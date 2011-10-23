@@ -349,6 +349,8 @@ class BaseDatabaseFeatures(object):
     has_select_for_update = False
     has_select_for_update_nowait = False
 
+    supports_joins = True
+    distinguishes_insert_from_update = True
     supports_select_related = True
     supports_deleting_related_objects = True
 
