@@ -295,10 +295,10 @@ class QuerySet(object):
             else:
                 if skip:
                     row_data = row[index_start:aggregate_start]
-                    obj = model_cls(**dict(zip(init_list, row_data)))
+                    obj = model_cls(**dict(zip(init_list, row_data), __entity_exists=True))
                 else:
                     # Omit aggregates in object creation.
-                    obj = model(*row[index_start:aggregate_start])
+                    obj = model(*row[index_start:aggregate_start], **{'__entity_exists': True})
 
                 # Store the source database of the object
                 obj._state.db = db
@@ -1366,9 +1366,9 @@ def get_cached_row(row, index_start, using,  klass_info, offset=0):
         obj = None
     else:
         if field_names:
-            obj = klass(**dict(zip(field_names, fields)))
+            obj = klass(**dict(zip(field_names, fields), __entity_exists=True))
         else:
-            obj = klass(*fields)
+            obj = klass(*fields, **{'__entity_exists': True})
 
     # If an object was retrieved, set the database state.
     if obj:
@@ -1495,13 +1495,13 @@ class RawQuerySet(object):
                 values = compiler.resolve_columns(values, fields)
             # Associate fields to values
             if skip:
-                model_init_kwargs = {}
+                model_init_kwargs = {__entity_exists=True}
                 for attname, pos in model_init_field_names.iteritems():
                     model_init_kwargs[attname] = values[pos]
                 instance = model_cls(**model_init_kwargs)
             else:
                 model_init_args = [values[pos] for pos in model_init_field_pos]
-                instance = model_cls(*model_init_args)
+                instance = model_cls(*model_init_args, **{'__entity_exists': True})
             if annotation_fields:
                 for column, pos in annotation_fields:
                     setattr(instance, column, values[pos])
