@@ -1495,7 +1495,7 @@ class RawQuerySet(object):
                 values = compiler.resolve_columns(values, fields)
             # Associate fields to values
             if skip:
-                model_init_kwargs = {__entity_exists=True}
+                model_init_kwargs = {'__entity_exists': True}
                 for attname, pos in model_init_field_names.iteritems():
                     model_init_kwargs[attname] = values[pos]
                 instance = model_cls(**model_init_kwargs)
