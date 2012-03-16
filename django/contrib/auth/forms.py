@@ -5,7 +5,7 @@ from django.forms.util import flatatt
 from django.template import loader
 from django.utils.datastructures import SortedDict
 from django.utils.html import format_html, format_html_join
-from django.utils.http import int_to_base36
+from django.utils.http import urlsafe_base64_encode
 from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -249,7 +249,7 @@ class PasswordResetForm(forms.Form):
                 'email': user.email,
                 'domain': domain,
                 'site_name': site_name,
-                'uid': int_to_base36(user.pk),
+                'uid': urlsafe_base64_encode(str(user.id)),
                 'user': user,
                 'token': token_generator.make_token(user),
                 'protocol': use_https and 'https' or 'http',

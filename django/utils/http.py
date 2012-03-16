@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import base64
 import calendar
 import datetime
 import re
@@ -11,7 +12,7 @@ except ImportError:     # Python 2
     import urlparse
     urllib_parse.urlparse = urlparse.urlparse
 
-
+from binascii import Error as BinasciiError
 from email.utils import formatdate
 
 from django.utils.datastructures import MultiValueDict
@@ -201,6 +202,16 @@ def int_to_base36(i):
         i = i % j
         factor -= 1
     return ''.join(base36)
+
+def urlsafe_base64_encode(s):
+    return base64.urlsafe_b64encode(s).rstrip('\n=')
+
+def urlsafe_base64_decode(s):
+    assert isinstance(s, str)
+    try:
+        return base64.urlsafe_b64decode(s.ljust(len(s) + len(s) % 4, '='))
+    except (LookupError, BinasciiError), e:
+        raise ValueError(e)
 
 def parse_etags(etag_str):
     """

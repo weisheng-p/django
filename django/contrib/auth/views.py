@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, QueryDict
 from django.template.response import TemplateResponse
-from django.utils.http import base36_to_int, is_safe_url
+from django.utils.http import is_safe_url, urlsafe_base64_decode
 from django.utils.translation import ugettext as _
 from django.shortcuts import resolve_url
 from django.views.decorators.debug import sensitive_post_parameters
@@ -184,7 +184,7 @@ def password_reset_done(request,
 # Doesn't need csrf_protect since no-one can guess the URL
 @sensitive_post_parameters()
 @never_cache
-def password_reset_confirm(request, uidb36=None, token=None,
+def password_reset_confirm(request, uidb64=None, token=None,
                            template_name='registration/password_reset_confirm.html',
                            token_generator=default_token_generator,
                            set_password_form=SetPasswordForm,
@@ -195,13 +195,13 @@ def password_reset_confirm(request, uidb36=None, token=None,
     form for entering a new password.
     """
     UserModel = get_user_model()
-    assert uidb36 is not None and token is not None  # checked by URLconf
+    assert uidb64 is not None and token is not None  # checked by URLconf
     if post_reset_redirect is None:
         post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
     try:
-        uid_int = base36_to_int(uidb36)
-        user = UserModel._default_manager.get(pk=uid_int)
-    except (ValueError, OverflowError, UserModel.DoesNotExist):
+        uid = urlsafe_base64_decode(str(uidb64))
+        user = User.objects.get(id=uid)
+    except (TypeError, ValueError, User.DoesNotExist):
         user = None
 
     if user is not None and token_generator.check_token(user, token):
