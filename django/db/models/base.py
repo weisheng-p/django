@@ -521,6 +521,7 @@ class Model(object):
             pk_set = pk_val is not None
             record_exists = True
             manager = cls._base_manager
+            connection = connections[using]
 
             # TODO/NONREL: Some backends could emulate force_insert/_update
             # with an optimistic transaction, but since it's costly we should
