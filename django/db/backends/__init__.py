@@ -359,6 +359,7 @@ class BaseDatabaseFeatures(object):
     has_select_for_update = False
     has_select_for_update_nowait = False
 
+    supports_joins = True
     supports_select_related = True
 
     # Does the default test database allow multiple connections?
