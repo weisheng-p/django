@@ -13,7 +13,7 @@ from django.core import validators
 from django.db.models.fields import AutoField, FieldDoesNotExist
 from django.db.models.fields.related import (ManyToOneRel,
     OneToOneField, add_lazy_relation)
-from django.db import (router, transaction, DatabaseError,
+from django.db import (connections, router, transaction, DatabaseError,
     DEFAULT_DB_ALIAS)
 from django.db.models.query import Q
 from django.db.models.query_utils import DeferredAttribute, deferred_class_factory
@@ -316,7 +316,8 @@ class ModelState(object):
         self.db = db
         # If true, uniqueness validation checks will consider this a new, as-yet-unsaved object.
         # Necessary for correct validation of new instances of objects with explicit (non-auto) PKs.
-        # This impacts validation only; it has no effect on the actual save.
+        # Also used when connection.features.distinguishes_insert_from_update is false to identify
+        # when an instance has been newly created.
         self.adding = True
 
 
@@ -413,6 +414,7 @@ class Model(six.with_metaclass(ModelBase)):
                     pass
             if kwargs:
                 raise TypeError("'%s' is an invalid keyword argument for this function" % list(kwargs)[0])
+        self._original_pk = self.pk if self._meta.pk is not None else None
         super(Model, self).__init__()
         signals.post_init.send(sender=self.__class__, instance=self)
 
@@ -557,6 +559,7 @@ class Model(six.with_metaclass(ModelBase)):
         using = using or router.db_for_write(self.__class__, instance=self)
         assert not (force_insert and (force_update or update_fields))
         assert update_fields is None or len(update_fields) > 0
+        entity_exists = bool(not self._state.adding and self._original_pk == self.pk)
         if cls is None:
             cls = self.__class__
             meta = cls._meta
@@ -615,11 +618,26 @@ class Model(six.with_metaclass(ModelBase)):
             pk_set = pk_val is not None
             record_exists = True
             manager = cls._base_manager
-            if pk_set:
+            connection = connections[using]
+
+            # TODO/NONREL: Some backends could emulate force_insert/_update
+            # with an optimistic transaction, but since it's costly we should
+            # only do it when the user explicitly wants it.
+            # By adding support for an optimistic locking transaction
+            # in Django (SQL: SELECT ... FOR UPDATE) we could even make that
+            # part fully reusable on all backends (the current .exists()
+            # check below isn't really safe if you have lots of concurrent
+            # requests. BTW, and neither is QuerySet.get_or_create).
+            try_update = connection.features.distinguishes_insert_from_update
+            if not try_update:
+                record_exists = False
+
+            if try_update and pk_set:
                 # Determine if we should do an update (pk already exists, forced update,
                 # no force_insert)
                 if ((force_update or update_fields) or (not force_insert and
                         manager.using(using).filter(pk=pk_val).exists())):
+                    # It does already exist, so do an UPDATE.
                     if force_update or non_pks:
                         values = [(f, None, (raw and getattr(self, f.attname) or f.pre_save(self, False))) for f in non_pks]
                         if values:
@@ -658,9 +676,15 @@ class Model(six.with_metaclass(ModelBase)):
         # Once saved, this is no longer a to-be-added instance.
         self._state.adding = False
 
+        self._original_pk = self.pk
+
         # Signal that the save is complete
         if origin and not meta.auto_created:
-            signals.post_save.send(sender=origin, instance=self, created=(not record_exists),
+            if connection.features.distinguishes_insert_from_update:
+                created = not record_exists
+            else:
+                created = not entity_exists
+            signals.post_save.send(sender=origin, instance=self, created=created,
                                    update_fields=update_fields, raw=raw, using=using)
 
     save_base.alters_data = True
@@ -672,6 +696,9 @@ class Model(six.with_metaclass(ModelBase)):
         collector = Collector(using=using)
         collector.collect([self])
         collector.delete()
+
+        self._state.adding = False
+        self._original_pk = None
 
     delete.alters_data = True
 
