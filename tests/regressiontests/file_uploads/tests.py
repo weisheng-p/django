@@ -228,6 +228,16 @@ class FileUploadTests(TestCase):
         got = json.loads(self.client.request(**r).content.decode('utf-8'))
         self.assertEqual(got, {})
 
+    def test_extra_content_type(self):
+        f = tempfile.NamedTemporaryFile()
+        f.write('a' * (2 ** 21))
+        f.seek(0)
+        f.content_type = 'text/plain; blob-key=upload blob key; other=test'
+
+        response = self.client.post("/file_uploads/content_type_extra/", {'f': f})
+        got = simplejson.loads(response.content)
+        self.assertEqual(got['f'], 'upload blob key')
+
     def test_custom_upload_handler(self):
         # A small file (under the 5M quota)
         smallfile = tempfile.NamedTemporaryFile()
