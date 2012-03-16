@@ -268,7 +268,8 @@ class ModelState(object):
         self.db = db
         # If true, uniqueness validation checks will consider this a new, as-yet-unsaved object.
         # Necessary for correct validation of new instances of objects with explicit (non-auto) PKs.
-        # This impacts validation only; it has no effect on the actual save.
+        # Also used when connection.features.distinguishes_insert_from_update is false to identify
+        # when an instance has been newly created.
         self.adding = True
 
 class Model(object):
@@ -276,7 +277,6 @@ class Model(object):
     _deferred = False
 
     def __init__(self, *args, **kwargs):
-        self._entity_exists = kwargs.pop('__entity_exists', False)
         signals.pre_init.send(sender=self.__class__, args=args, kwargs=kwargs)
 
         # Set up the storage for instance state
@@ -475,7 +475,7 @@ class Model(object):
         ('raw', 'cls', and 'origin').
         """
         using = using or router.db_for_write(self.__class__, instance=self)
-        entity_exists = bool(self._entity_exists and self._original_pk == self.pk)
+        entity_exists = bool(not self._state.adding and self._original_pk == self.pk)
         assert not (force_insert and force_update)
         if cls is None:
             cls = self.__class__
@@ -576,7 +576,6 @@ class Model(object):
         # Once saved, this is no longer a to-be-added instance.
         self._state.adding = False
 
-        self._entity_exists = True
         self._original_pk = self.pk
 
         # Signal that the save is complete
@@ -599,7 +598,7 @@ class Model(object):
         collector.collect([self])
         collector.delete()
 
-        self._entity_exists = False
+        self._state.adding = False
         self._original_pk = None
 
     delete.alters_data = True
