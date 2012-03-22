@@ -503,12 +503,9 @@ class Field(object):
         return '<%s>' % path
 
 class AutoField(Field):
-    description = _("Integer")
+    description = _("Automatic key")
 
     empty_strings_allowed = False
-    default_error_messages = {
-        'invalid': _(u"'%s' value must be an integer."),
-    }
 
     def __init__(self, *args, **kwargs):
         assert kwargs.get('primary_key', False) is True, \
@@ -519,22 +516,13 @@ class AutoField(Field):
     def get_internal_type(self):
         return "AutoField"
 
-    def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            msg = self.error_messages['invalid'] % str(value)
-            raise exceptions.ValidationError(msg)
-
     def validate(self, value, model_instance):
         pass
 
-    def get_prep_value(self, value):
+    def get_db_prep_value(self, value, connection, prepared=False):
         if value is None:
-            return None
-        return int(value)
+            return value
+        return connection.ops.value_to_db_auto(value)
 
     def contribute_to_class(self, cls, name):
         assert not cls._meta.has_auto_field, \
