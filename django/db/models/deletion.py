@@ -171,6 +171,10 @@ class Collector(object):
                 if related.model._meta.auto_created:
                     self.add_batch(related.model, field, new_objs)
                 else:
+                    # No need to fetch related objects if we are not doing
+                    # anything with them.
+                    if field.rel.on_delete == DO_NOTHING:
+                        continue
                     sub_objs = self.related_objects(related, new_objs)
                     if not sub_objs:
                         continue
