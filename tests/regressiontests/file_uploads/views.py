@@ -9,7 +9,8 @@ from django.utils import simplejson
 
 from .models import FileModel, UPLOAD_TO
 from .tests import UNICODE_FILENAME
-from .uploadhandler import QuotaUploadHandler, ErroringUploadHandler
+from .uploadhandler import (QuotaUploadHandler, ErroringUploadHandler,
+    ContentTypeExtraUploadHandler)
 
 
 def file_upload_view(request):
@@ -134,3 +135,8 @@ def file_upload_filename_case_view(request):
     obj = FileModel()
     obj.testfile.save(file.name, file)
     return HttpResponse('%d' % obj.pk)
+
+def file_upload_content_type_extra(request):
+    request.upload_handlers.insert(0, ContentTypeExtraUploadHandler())
+    r = dict([(k, f.read()) for k, f in request.FILES.items()])
+    return HttpResponse(simplejson.dumps(r))
