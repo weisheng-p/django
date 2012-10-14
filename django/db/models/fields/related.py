@@ -3,7 +3,8 @@ from operator import attrgetter
 from django.db import connection, router, connections
 from django.db.backends import util
 from django.db.models import signals, get_model
-from django.db.models.fields import Field, FieldDoesNotExist
+from django.db.models.fields import Field, FieldDoesNotExist, AutoField, \
+    IntegerField, PositiveIntegerField, PositiveSmallIntegerField
 from django.db.models.related import RelatedObject
 from django.db.models.query import QuerySet
 from django.db.models.query_utils import QueryWrapper
@@ -1063,7 +1064,10 @@ class ForeignKey(RelatedField, Field):
         # If the database needs similar types for key fields however, the only
         # thing we can do is making AutoField an IntegerField.
         rel_field = self.rel.get_related_field()
-        return rel_field.related_db_type(connection=connections[router.db_for_read(rel_field.model)])
+        if isinstance(rel_field, AutoField) or \
+           not connection.features.related_fields_match_type and isinstance(rel_field, (PositiveIntegerField, PositiveSmallIntegerField)):
+            return IntegerField().db_type(connection=connection)
+        return rel_field.db_type(connection=connection)
 
 
 class OneToOneField(ForeignKey):
