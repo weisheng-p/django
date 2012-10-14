@@ -78,7 +78,7 @@ def is_protected_type(obj):
     force_text(strings_only=True).
     """
     return isinstance(obj, six.integer_types + (type(None), float, Decimal,
-        datetime.datetime, datetime.date, datetime.time))
+        datetime.datetime, datetime.date, datetime.time, tuple, list, dict))
 
 def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
     """
