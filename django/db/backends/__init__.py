@@ -472,6 +472,14 @@ class BaseDatabaseOperations(object):
         """
         return None
 
+    def bulk_batch_size(self, fields, objs):
+        """
+        Returns the maximum allowed batch size for the backend. The fields
+        are the fields going to be inserted in the batch, the objs contains
+        all the objects to be inserted.
+        """
+        return len(objs)
+
     def date_extract_sql(self, lookup_type, field_name):
         """
         Given a lookup_type of 'year', 'month' or 'day', returns the SQL that
@@ -508,6 +516,17 @@ class BaseDatabaseOperations(object):
         during a CREATE TABLE statement.
         """
         return ''
+
+    def distinct_sql(self, fields):
+        """
+        Returns an SQL DISTINCT clause which removes duplicate rows from the
+        result set. If any fields are given, only the given fields are being
+        checked for duplicates.
+        """
+        if fields:
+            raise NotImplementedError('DISTINCT ON fields is not supported by this database backend')
+        else:
+            return 'DISTINCT'
 
     def drop_foreignkey_sql(self):
         """
@@ -563,17 +582,6 @@ class BaseDatabaseOperations(object):
         contain a '%s' placeholder for the value being searched against.
         """
         raise NotImplementedError('Full-text search is not implemented for this database backend')
-
-    def distinct_sql(self, fields):
-        """
-        Returns an SQL DISTINCT clause which removes duplicate rows from the
-        result set. If any fields are given, only the given fields are being
-        checked for duplicates.
-        """
-        if fields:
-            raise NotImplementedError('DISTINCT ON fields is not supported by this database backend')
-        else:
-            return 'DISTINCT'
 
     def last_executed_query(self, cursor, sql, params):
         """
@@ -876,6 +884,12 @@ class BaseDatabaseOperations(object):
         """
         conn = ' %s ' % connector
         return conn.join(sub_expressions)
+
+    def modify_insert_params(self, placeholders, params):
+        """Allow modification of insert parameters. Needed for Oracle Spatial
+        backend due to #10888.
+        """
+        return params
 
 class BaseDatabaseIntrospection(object):
     """
