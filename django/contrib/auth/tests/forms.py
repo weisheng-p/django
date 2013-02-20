@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import (UserCreationForm, AuthenticationForm,
     PasswordChangeForm, SetPasswordForm, UserChangeForm, PasswordResetForm)
 from django.core import mail
+from django.db import connection
 from django.forms.fields import Field, EmailField
 from django.test import TestCase
 from django.test.utils import override_settings
