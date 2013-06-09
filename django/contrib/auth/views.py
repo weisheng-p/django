@@ -195,7 +195,6 @@ def password_reset_confirm(request, uidb64=None, token=None,
     form for entering a new password.
     """
     UserModel = get_user_model()
-    assert uidb64 is not None and token is not None  # checked by URLconf
     if post_reset_redirect is None:
         post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
     try:
