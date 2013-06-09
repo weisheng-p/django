@@ -199,8 +199,8 @@ def password_reset_confirm(request, uidb64=None, token=None,
         post_reset_redirect = reverse('django.contrib.auth.views.password_reset_complete')
     try:
         uid = urlsafe_base64_decode(str(uidb64))
-        user = User.objects.get(id=uid)
-    except (TypeError, ValueError, User.DoesNotExist):
+        user = UserModel._default_manager.get(id=uid)
+    except (TypeError, ValueError, UserModel.DoesNotExist):
         user = None
 
     if user is not None and token_generator.check_token(user, token):
