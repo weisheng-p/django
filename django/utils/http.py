@@ -209,7 +209,7 @@ def urlsafe_base64_encode(s):
 def urlsafe_base64_decode(s):
     assert isinstance(s, str)
     try:
-        return base64.urlsafe_b64decode(s.ljust(len(s) + len(s) % 4, '='))
+        return base64.urlsafe_b64decode(s.ljust(len(s) + len(s) % 4, str('=')))
     except (LookupError, BinasciiError), e:
         raise ValueError(e)
 
